@@ -1,0 +1,29 @@
+# Node.js dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Local environment
+.env
+config/config.js
+
+# Baileys session (auth_info folder)
+auth_info/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Build / dist (if you compile)
+dist/
+build/
+
+# IDE / Editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
