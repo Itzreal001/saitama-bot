@@ -49,7 +49,10 @@ async function startBot() {
 
   const sock = makeWASocket({
     auth: state,
-    browser: ['Saitama Bot', 'Chrome', '1.0.0']
+    browser: ['Saitama Bot', 'Chrome', '1.0.0'],
+    logger: P({ level: 'silent' }),
+    syncFullHistory: false,
+    markOnlineOnConnect: true
   });
 
   sock.ev.on('creds.update', saveCreds);
@@ -67,8 +70,13 @@ async function startBot() {
     if (connection === 'open') {
       console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
     } else if (connection === 'close') {
-      console.log(chalk.red('❌ Connection closed, reconnecting...'));
-      startBot(); // auto-reconnect
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
+      if (shouldReconnect) {
+        console.log(chalk.yellow('⚠️ Connection closed, reconnecting...'));
+        setTimeout(() => startBot(), 3000); // reconnect after 3 seconds
+      } else {
+        console.log(chalk.red('❌ Connection closed. Please delete auth_info and scan QR again.'));
+      }
     }
   });
 
