@@ -20,6 +20,7 @@ import { welcomeMessage, goodbyeMessage } from './commands/welcome.js';
 import funGames from './commands/funGames.js';
 import downloads from './commands/downloads.js';
 import aiSearch from './commands/aiSearch.js';
+import { toggleAlwaysOnline, toggleAutoTyping, handlePresence, maintainOnlineStatus } from './commands/presence.js';
 
 // === Bot Banner Display ===
 const banner = `
@@ -69,6 +70,11 @@ async function startBot() {
 
     if (connection === 'open') {
       console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
+      
+      // Maintain online status every 10 seconds
+      setInterval(async () => {
+        await maintainOnlineStatus(sock);
+      }, 10000);
     } else if (connection === 'close') {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
       if (shouldReconnect) {
@@ -113,6 +119,11 @@ async function startBot() {
 
     console.log(chalk.yellow(`[${from}] ${text}`));
     
+    // Handle auto typing
+    if (!msg.key.fromMe) {
+      await handlePresence(sock, from);
+    }
+    
     // Skip if no text
     if (!text) {
       console.log(chalk.red('⚠️ No text found in message'));
@@ -143,6 +154,16 @@ async function startBot() {
           await sock.sendMessage(from, { text: frames[i] });
           await new Promise(r => setTimeout(r, 300));
         }
+        break;
+
+      case text.toLowerCase() === '.alwaysonline':
+      case text.toLowerCase() === '.online':
+        await toggleAlwaysOnline(sock, msg);
+        break;
+
+      case text.toLowerCase() === '.autotyping':
+      case text.toLowerCase() === '.typing':
+        await toggleAutoTyping(sock, msg);
         break;
 
       case text.toLowerCase() === '.mute' || text.toLowerCase() === '.unmute':
