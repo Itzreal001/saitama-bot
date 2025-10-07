@@ -1,5 +1,5 @@
 // Store presence states
-let alwaysOnline = true;  // Enabled by default - bot always appears online
+let alwaysOnline = false;  // Disabled - only auto typing is active
 let autoTyping = true;     // Enabled by default - shows typing when receiving messages
 
 export async function toggleAlwaysOnline(sock, msg) {

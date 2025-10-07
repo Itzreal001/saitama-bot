@@ -21,6 +21,7 @@ import funGames from './commands/funGames.js';
 import downloads from './commands/downloads.js';
 import aiSearch from './commands/aiSearch.js';
 import { toggleAlwaysOnline, toggleAutoTyping, handlePresence, maintainOnlineStatus } from './commands/presence.js';
+import { generatePairingCode } from './commands/pairing.js';
 
 // === Bot Banner Display ===
 const banner = `
@@ -45,8 +46,6 @@ if (fs.existsSync(imagePath)) {
 }
 
 // === Start WhatsApp Connection ===
-let onlineStatusInterval = null;
-
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
 
@@ -72,34 +71,8 @@ async function startBot() {
 
     if (connection === 'open') {
       console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
-      
-      // Clear any existing interval before creating a new one
-      if (onlineStatusInterval) {
-        clearInterval(onlineStatusInterval);
-      }
-      
-      // Send initial online status once when connected
-      try {
-        await maintainOnlineStatus(sock);
-      } catch (error) {
-        console.log(chalk.gray('Initial online status update failed'));
-      }
-      
-      // Maintain online status every 60 seconds (reduced frequency to prevent disconnections)
-      onlineStatusInterval = setInterval(async () => {
-        try {
-          await maintainOnlineStatus(sock);
-        } catch (error) {
-          console.log(chalk.gray('Online status update skipped (connection not ready)'));
-        }
-      }, 60000);
+      console.log(chalk.cyanBright('🤖 Auto Typing: ENABLED'));
     } else if (connection === 'close') {
-      // Clear interval when connection closes
-      if (onlineStatusInterval) {
-        clearInterval(onlineStatusInterval);
-        onlineStatusInterval = null;
-      }
-      
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
       if (shouldReconnect) {
         console.log(chalk.yellow('⚠️ Connection closed, reconnecting...'));
@@ -188,6 +161,10 @@ async function startBot() {
       case text.toLowerCase() === '.autotyping':
       case text.toLowerCase() === '.typing':
         await toggleAutoTyping(sock, msg);
+        break;
+
+      case text.toLowerCase().startsWith('.pair'):
+        await generatePairingCode(sock, msg);
         break;
 
       case text.toLowerCase() === '.mute' || text.toLowerCase() === '.unmute':
