@@ -45,6 +45,8 @@ if (fs.existsSync(imagePath)) {
 }
 
 // === Start WhatsApp Connection ===
+let onlineStatusInterval = null;
+
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState('auth_info');
 
@@ -59,7 +61,7 @@ async function startBot() {
   sock.ev.on('creds.update', saveCreds);
 
   // Connection updates
-  sock.ev.on('connection.update', (update) => {
+  sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
@@ -71,11 +73,33 @@ async function startBot() {
     if (connection === 'open') {
       console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
       
-      // Maintain online status every 10 seconds
-      setInterval(async () => {
+      // Clear any existing interval before creating a new one
+      if (onlineStatusInterval) {
+        clearInterval(onlineStatusInterval);
+      }
+      
+      // Send initial online status once when connected
+      try {
         await maintainOnlineStatus(sock);
-      }, 10000);
+      } catch (error) {
+        console.log(chalk.gray('Initial online status update failed'));
+      }
+      
+      // Maintain online status every 60 seconds (reduced frequency to prevent disconnections)
+      onlineStatusInterval = setInterval(async () => {
+        try {
+          await maintainOnlineStatus(sock);
+        } catch (error) {
+          console.log(chalk.gray('Online status update skipped (connection not ready)'));
+        }
+      }, 60000);
     } else if (connection === 'close') {
+      // Clear interval when connection closes
+      if (onlineStatusInterval) {
+        clearInterval(onlineStatusInterval);
+        onlineStatusInterval = null;
+      }
+      
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
       if (shouldReconnect) {
         console.log(chalk.yellow('⚠️ Connection closed, reconnecting...'));

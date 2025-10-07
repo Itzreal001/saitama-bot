@@ -27,17 +27,30 @@ export async function toggleAutoTyping(sock, msg) {
 export async function handlePresence(sock, from) {
   // Send typing indicator if auto typing is enabled
   if (autoTyping && from) {
-    await sock.sendPresenceUpdate('composing', from);
-    // Stop typing after 3 seconds
-    setTimeout(async () => {
-      await sock.sendPresenceUpdate('paused', from);
-    }, 3000);
+    try {
+      await sock.sendPresenceUpdate('composing', from);
+      // Stop typing after 3 seconds
+      setTimeout(async () => {
+        try {
+          await sock.sendPresenceUpdate('paused', from);
+        } catch (error) {
+          // Silently fail if connection is not ready
+        }
+      }, 3000);
+    } catch (error) {
+      // Silently fail if connection is not ready
+    }
   }
 }
 
 export async function maintainOnlineStatus(sock) {
   if (alwaysOnline) {
-    await sock.sendPresenceUpdate('available');
+    try {
+      await sock.sendPresenceUpdate('available');
+    } catch (error) {
+      // Silently fail if connection is not ready
+      throw error; // Re-throw to be caught by interval handler
+    }
   }
 }
 
