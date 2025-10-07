@@ -71,7 +71,6 @@ async function startBot() {
 
     if (connection === 'open') {
       console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
-      console.log(chalk.cyanBright('🤖 Auto Typing: ENABLED'));
     } else if (connection === 'close') {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
       if (shouldReconnect) {
@@ -115,11 +114,6 @@ async function startBot() {
       '';
 
     console.log(chalk.yellow(`[${from}] ${text}`));
-    
-    // Handle auto typing
-    if (!msg.key.fromMe) {
-      await handlePresence(sock, from);
-    }
     
     // Skip if no text
     if (!text) {

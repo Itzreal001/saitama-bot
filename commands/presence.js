@@ -1,6 +1,6 @@
 // Store presence states
-let alwaysOnline = false;  // Disabled - only auto typing is active
-let autoTyping = true;     // Enabled by default - shows typing when receiving messages
+let alwaysOnline = false;  // Disabled
+let autoTyping = false;    // Disabled
 
 export async function toggleAlwaysOnline(sock, msg) {
   const from = msg.key.remoteJid;
