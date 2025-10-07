@@ -118,11 +118,27 @@ Bot settings are in `config.js`:
 - **Auto-Reconnect**: The bot automatically reconnects if the connection drops
 - **Group Events**: Automatically sends welcome/goodbye messages when members join/leave
 - **Console Logging**: All incoming messages are logged with chalk-styled output
+- **Crash Prevention**: The bot includes comprehensive error handling to prevent crashes from corrupted data files, failed message sends, or unexpected errors
+
+## Stability & Error Handling
+
+The bot implements multiple layers of crash prevention:
+
+1. **File I/O Safety**: All JSON file operations (warnings, welcome messages) include error handling that automatically recovers from corrupted files by resetting them
+2. **Event Handler Protection**: Group participant events (welcome/goodbye) are wrapped in try-catch to prevent crashes from failed message sends
+3. **Safe Calculator**: The `.calculator` command uses input sanitization instead of dangerous eval() to prevent code injection attacks
+4. **Global Error Handlers**: Uncaught promise rejections and exceptions are caught and logged instead of crashing the bot
 
 ## User Preferences
 None configured yet.
 
 ## Recent Changes
+- **2025-10-07**: Crash prevention and stability improvements
+  - Added comprehensive error handling to file I/O operations (warnings.js, welcome.js)
+  - Protected event handlers with try-catch blocks to prevent crashes
+  - Replaced dangerous eval() with safe math expression parser in calculator command
+  - Implemented global unhandled rejection and exception handlers
+  - All npm packages installed and verified working
 - **2025-10-07**: Initial import and Replit environment setup
   - Configured Node.js 20 environment
   - Installed all dependencies
