@@ -82,17 +82,18 @@ async function startBot() {
 
   // Handle incoming messages
   sock.ev.on('messages.upsert', async (m) => {
-    const msg = m.messages[0];
-    
-    // Debug: Log all messages including fromMe status
-    console.log(chalk.magenta('📨 Raw message - fromMe:'), msg.key.fromMe, 'remoteJid:', msg.key.remoteJid);
-    
-    if (!msg.message) return;
-
-    const from = msg.key.remoteJid;
-    
-    // Debug: Log message structure
-    console.log(chalk.cyan('📩 Message received:'), JSON.stringify(msg.message, null, 2));
+    try {
+      const msg = m.messages[0];
+      
+      if (!msg.message) return;
+      
+      // Ignore protocol messages, notifications, and status updates
+      if (msg.message.protocolMessage || msg.message.senderKeyDistributionMessage) return;
+      
+      const from = msg.key.remoteJid;
+      
+      // Debug: Log message info
+      console.log(chalk.magenta('📨 Message - fromMe:'), msg.key.fromMe, 'from:', from);
     
     // Extract text from various message types
     const text = 
@@ -173,8 +174,11 @@ async function startBot() {
         break;
     }
 
-    // Anti-link detection
-    if (text.includes('https://') || text.includes('www.')) await antiLink(sock, msg);
+      // Anti-link detection
+      if (text.includes('https://') || text.includes('www.')) await antiLink(sock, msg);
+    } catch (error) {
+      console.log(chalk.red('Error handling message:'), error.message);
+    }
   });
 }
 
