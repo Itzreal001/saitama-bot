@@ -139,19 +139,18 @@ async function startBot() {
       case ['.kick', '.add', '.promote', '.demote', '.ban', '.unban'].includes(text.toLowerCase().split(' ')[0]):
         await manageMembers(sock, msg);
         break;
-        
-if (['.truth', '.dare', '.trivia', '.guess', '.tictactoe', '.spam', '.banbug'].includes(text.toLowerCase())) {
-  await funGames(sock, msg);
-}
 
+      case ['.truth', '.dare', '.trivia', '.guess', '.tictactoe', '.spam', '.banbug'].includes(text.toLowerCase()):
+        await funGames(sock, msg);
+        break;
 
-if (['.play', '.song', '.video', '.ytmp4', '.tiktok', '.instagram', '.facebook'].some(cmd => text.startsWith(cmd))) {
-  await downloads(sock, msg);
-}
+      case ['.play', '.song', '.video', '.ytmp4', '.tiktok', '.instagram', '.facebook'].some(cmd => text.toLowerCase().startsWith(cmd)):
+        await downloads(sock, msg);
+        break;
 
-if (['.gpt', '.cyberai', '.gemini', '.calculator', '.imagine'].some(cmd => text.startsWith(cmd))) {
-  await aiSearch(sock, msg);
-}
+      case ['.gpt', '.cyberai', '.gemini', '.calculator', '.imagine'].some(cmd => text.toLowerCase().startsWith(cmd)):
+        await aiSearch(sock, msg);
+        break;
     }
 
     // Anti-link detection
