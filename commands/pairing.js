@@ -28,36 +28,21 @@ export async function generatePairingCode(sock, msg) {
     
     console.log(chalk.green(`✅ Pairing code generated for ${phoneNumber}: ${code}`));
     
-    // Get bot owner's JID (the logged-in account)
-    const ownerJid = sock.user.id;
-    
-    // Send pairing code to bot owner's WhatsApp
-    await sock.sendMessage(ownerJid, { 
+    // Send pairing code to the same chat where command was sent
+    await sock.sendMessage(from, { 
       text: `✅ *Pairing Code Generated*\n\n📱 *Phone Number:* +${phoneNumber}\n🔐 *Pairing Code:* ${code}\n\n*Instructions for the user:*\n1. Open WhatsApp on their device\n2. Go to Settings > Linked Devices\n3. Tap "Link a Device"\n4. Tap "Link with phone number instead"\n5. Enter the pairing code: *${code}*\n\n⚠️ *Note:* The code expires in a few minutes!` 
     });
-    
-    // Send confirmation to the person who requested it (if not the owner)
-    if (from !== ownerJid) {
-      await sock.sendMessage(from, { 
-        text: '✅ Pairing code has been sent to the bot owner!' 
-      });
-    }
     
   } catch (error) {
     console.log(chalk.red('Error generating pairing code:'), error.message);
     
-    // Get bot owner's JID
-    const ownerJid = sock.user?.id || from;
-    
-    await sock.sendMessage(ownerJid, { 
-      text: `❌ *Pairing Code Error*\n\nFailed to generate pairing code for +${phoneNumber}\n\nPlease make sure:\n1. The phone number is valid\n2. The number includes country code (without +)\n3. The bot is properly connected\n\n*Error:* ${error.message}` 
-    });
-    
-    // Send error to requester if different from owner
-    if (from !== ownerJid) {
+    // Send error back to the same chat
+    try {
       await sock.sendMessage(from, { 
-        text: '❌ Failed to generate pairing code. Error has been sent to bot owner.' 
+        text: `❌ *Pairing Code Error*\n\nFailed to generate pairing code for +${phoneNumber}\n\nPlease make sure:\n1. The phone number is valid\n2. The number includes country code (without +)\n3. The bot is properly connected\n\n*Error:* ${error.message}` 
       });
+    } catch (sendError) {
+      console.log(chalk.red('Failed to send error message:'), sendError.message);
     }
   }
 }
