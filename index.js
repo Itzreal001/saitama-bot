@@ -36,6 +36,17 @@ const banner = `
 
 console.log(chalk.cyanBright(banner));
 
+// === Global Error Handlers ===
+process.on('unhandledRejection', (reason, promise) => {
+  console.log(chalk.red('❌ Unhandled Promise Rejection:'), reason);
+  console.log(chalk.gray('Promise:'), promise);
+});
+
+process.on('uncaughtException', (error) => {
+  console.log(chalk.red('❌ Uncaught Exception:'), error.message);
+  console.log(chalk.gray('Stack:'), error.stack);
+});
+
 // === Image Display ===
 const imagePath = path.join('assets', 'media', 'logo.jpg');
 if (fs.existsSync(imagePath)) {
@@ -87,9 +98,13 @@ async function startBot() {
 
   // Welcome / Goodbye events
   sock.ev.on('group-participants.update', async (update) => {
-    for (let participant of update.participants) {
-      if (update.action === 'add') await welcomeMessage(sock, { id: participant });
-      if (update.action === 'remove') await goodbyeMessage(sock, { id: participant });
+    try {
+      for (let participant of update.participants) {
+        if (update.action === 'add') await welcomeMessage(sock, { id: participant });
+        if (update.action === 'remove') await goodbyeMessage(sock, { id: participant });
+      }
+    } catch (error) {
+      console.log(chalk.red('Error handling group participant update:'), error.message);
     }
   });
 

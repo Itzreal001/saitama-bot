@@ -3,6 +3,30 @@
  * Commands: .gpt, .cyberai, .gemini, .calculator, .imagine
  */
 
+function safeCalculate(expr) {
+  const sanitized = expr.replace(/[^0-9+\-*/(). ]/g, '');
+  
+  if (!sanitized || sanitized.length === 0) {
+    throw new Error('Invalid expression');
+  }
+  
+  if (sanitized.includes('(') && !sanitized.includes(')')) {
+    throw new Error('Unbalanced parentheses');
+  }
+  
+  try {
+    const result = Function('"use strict"; return (' + sanitized + ')')();
+    
+    if (typeof result !== 'number' || !isFinite(result)) {
+      throw new Error('Result is not a valid number');
+    }
+    
+    return result;
+  } catch (error) {
+    throw new Error('Invalid mathematical expression');
+  }
+}
+
 export default async function aiSearch(sock, msg) {
   const text = msg.message?.conversation || '';
   const from = msg.key.remoteJid;
@@ -23,9 +47,9 @@ export default async function aiSearch(sock, msg) {
   else if (lower.startsWith('.calculator')) {
     const expr = text.replace('.calculator', '').trim();
     try {
-      const result = eval(expr); // ⚠️ Basic evaluation — replace later for safety
+      const result = safeCalculate(expr);
       await sendReply(`🧮 *Result:* ${expr} = ${result}`);
-    } catch {
+    } catch (error) {
       await sendReply('⚠️ Invalid expression. Try `.calculator 5 + 3 * 2`');
     }
   } 
