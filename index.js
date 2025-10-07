@@ -1,11 +1,12 @@
-import makeWASocket, { useSingleFileAuthState } from '@whiskeysockets/baileys';
+import makeWASocket, { useMultiFileAuthState } from '@whiskeysockets/baileys';
 import P from "pino";
 import chalk from 'chalk';
+import qrcode from 'qrcode-terminal';
 import fs from 'fs';
 import path from 'path';
 import menu from "./commands/menu.js";
 import alive from "./commands/alive.js";
-import config from "./config/config.js";
+import config from "./config.js";
 import { groupMenu } from "./commands/group.js";
 import muteGroup from "./commands/mute.js";
 import manageMembers from "./commands/manageMembers.js";
@@ -16,7 +17,7 @@ import { warnUser, checkWarnings } from './commands/warnings.js';
 import antiLink from './commands/antilink.js';
 import hideTag from './commands/hidetag.js';
 import { welcomeMessage, goodbyeMessage } from './commands/welcome.js';
-import funGames from './commands/fungames.js';
+import funGames from './commands/funGames.js';
 import downloads from './commands/downloads.js';
 import aiSearch from './commands/aiSearch.js';
 
@@ -44,10 +45,9 @@ if (fs.existsSync(imagePath)) {
 
 // === Start WhatsApp Connection ===
 async function startBot() {
-  const { state, saveCreds } = await useSingleFileAuthState('auth_info.json');
+  const { state, saveCreds } = await useMultiFileAuthState('auth_info');
 
   const sock = makeWASocket({
-    printQRInTerminal: true,
     auth: state,
     browser: ['Saitama Bot', 'Chrome', '1.0.0']
   });
@@ -59,8 +59,9 @@ async function startBot() {
     const { connection, lastDisconnect, qr } = update;
 
     if (qr) {
-      console.log(chalk.yellow('📌 Scan this QR or save this login code:'));
-      console.log(qr); // login code
+      console.log(chalk.yellow('\n📌 Scan this QR code with WhatsApp:\n'));
+      qrcode.generate(qr, { small: true });
+      console.log(chalk.gray('\nOr use this pairing code: ' + qr));
     }
 
     if (connection === 'open') {
