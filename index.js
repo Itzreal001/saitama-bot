@@ -304,6 +304,28 @@ async function startBot() {
       case ['.gpt', '.cyberai', '.gemini', '.calculator', '.imagine'].some(cmd => text.toLowerCase().startsWith(cmd)):
         await aiSearch(sock, msg);
         break;
+
+      case text.toLowerCase().startsWith('.broadcast'):
+      case text.toLowerCase().startsWith('.bc'):
+        await broadcast(sock, msg);
+        break;
+
+      case text.toLowerCase().startsWith('.autoreply'):
+        await setAutoReply(sock, msg);
+        break;
+
+      case text.toLowerCase().startsWith('.remind'):
+        await setReminder(sock, msg);
+        break;
+
+      case text.toLowerCase() === '.listreminders':
+      case text.toLowerCase() === '.reminders':
+        await listReminders(sock, msg);
+        break;
+
+      case text.toLowerCase() === '.stats':
+        await stats(sock, msg);
+        break;
     }
 
       // Anti-link detection

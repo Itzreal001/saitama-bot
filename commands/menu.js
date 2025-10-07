@@ -22,6 +22,9 @@ export default async function menu(sock, remoteJid, type = "main", msg = null) {
 ┏━━━〔 ⚙️ 𝗕𝗢𝗧 𝗖𝗢𝗡𝗧𝗥𝗢𝗟𝗦 〕━━━┓
 ┣➤ 🟢 .alwaysonline / .online
 ┣➤ ⌨️ .autotyping / .typing
+┣➤ 📡 .broadcast / .bc
+┣➤ 💬 .autoreply
+┣➤ 📊 .stats
 ┗━━━━━━━━━━━━━━━━━━┛
 `;
 
@@ -73,6 +76,11 @@ ${ownerSection}
 ┣➤ 💭 .gemini
 ┣➤ 🧮 .calculator
 ┣➤ 🌠 .imagine
+┗━━━━━━━━━━━━━━━━━━┛
+
+┏━━━〔 ⏰ 𝗥𝗘𝗠𝗜𝗡𝗗𝗘𝗥𝗦 〕━━━┓
+┣➤ ⏰ .remind <time> <message>
+┣➤ 📋 .listreminders / .reminders
 ┗━━━━━━━━━━━━━━━━━━┛
 
 > *「 Saitama MD — The Hero Who Coded Too Hard 」*
