@@ -1,0 +1,17 @@
+{
+  "totalCommands": 6,
+  "commandCounts": {
+    ".menu": 1,
+    ".bc": 1,
+    ".autoreply": 1,
+    ".ping": 1,
+    ".alive": 1,
+    ".public": 1
+  },
+  "userCounts": {
+    "2349165016635@s.whatsapp.net": 1,
+    "2348089034026@s.whatsapp.net": 5
+  },
+  "groupCounts": {},
+  "startDate": "2025-10-07T15:08:23.767Z"
+}
