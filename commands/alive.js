@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import config from '../config/config.js';
+import config from '../config.js';
 import chalk from 'chalk';
 
 // 🕓 Format uptime nicely

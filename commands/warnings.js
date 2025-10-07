@@ -1,9 +1,11 @@
 import fs from 'fs';
 import path from 'path';
 
-const warningsFile = path.join('data', 'warnings.json');
+const dataDir = 'data';
+const warningsFile = path.join(dataDir, 'warnings.json');
 
-// Ensure warnings storage exists
+// Ensure data directory and warnings storage exist
+if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 if (!fs.existsSync(warningsFile)) fs.writeFileSync(warningsFile, JSON.stringify({}));
 
 export async function warnUser(sock, msg) {
