@@ -86,9 +86,25 @@ async function startBot() {
     if (!msg.message || msg.key.fromMe) return;
 
     const from = msg.key.remoteJid;
-    const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+    
+    // Debug: Log message structure
+    console.log(chalk.cyan('📩 Message received:'), JSON.stringify(msg.message, null, 2));
+    
+    // Extract text from various message types
+    const text = 
+      msg.message.conversation || 
+      msg.message.extendedTextMessage?.text || 
+      msg.message.imageMessage?.caption || 
+      msg.message.videoMessage?.caption || 
+      '';
 
     console.log(chalk.yellow(`[${from}] ${text}`));
+    
+    // Skip if no text
+    if (!text) {
+      console.log(chalk.red('⚠️ No text found in message'));
+      return;
+    }
 
     // === Commands ===
     switch (true) {
