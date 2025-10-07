@@ -3,7 +3,6 @@ import path from 'path';
 import os from 'os';
 import config from '../config.js';
 import chalk from 'chalk';
-import { getModeStatus } from './botmode.js';
 
 // 🕓 Format uptime nicely
 function formatUptime(seconds) {
@@ -16,7 +15,7 @@ function formatUptime(seconds) {
 export default async function alive(sock, remoteJid) {
   const runtime = formatUptime(process.uptime());
   const logoPath = path.resolve(config.image);
-  const modeStatus = getModeStatus();
+  const modeStatus = '🌐 Public Mode';
 
   if (!fs.existsSync(logoPath)) {
     console.log(chalk.red('⚠️ Logo not found at ' + logoPath));

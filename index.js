@@ -21,7 +21,6 @@ import funGames from './commands/funGames.js';
 import downloads from './commands/downloads.js';
 import aiSearch from './commands/aiSearch.js';
 import { toggleAlwaysOnline, toggleAutoTyping, handlePresence, maintainOnlineStatus } from './commands/presence.js';
-import { initializeOwner, hasAccess, isOwner, getAccessDeniedMessage, setPrivateMode, addSudoUser, getModeStatus } from './commands/botmode.js';
 
 // === Bot Banner Display ===
 const banner = `
@@ -56,45 +55,68 @@ if (fs.existsSync(imagePath)) {
   console.log(chalk.red('⚠️ Logo not found in assets/media/logo.jpg'));
 }
 
+// === Connection Management ===
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_BASE_DELAY = 3000;
+
+function getReconnectDelay() {
+  return Math.min(RECONNECT_BASE_DELAY * Math.pow(2, reconnectAttempts), 60000);
+}
+
 // === Start WhatsApp Connection ===
 async function startBot() {
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info');
+  try {
+    const { state, saveCreds } = await useMultiFileAuthState('auth_info');
 
-  const sock = makeWASocket({
-    auth: state,
-    browser: ['Saitama Bot', 'Chrome', '1.0.0'],
-    logger: P({ level: 'silent' }),
-    syncFullHistory: false,
-    markOnlineOnConnect: true
-  });
+    const sock = makeWASocket({
+      auth: state,
+      browser: ['Saitama Bot', 'Chrome', '1.0.0'],
+      logger: P({ level: 'silent' }),
+      syncFullHistory: false,
+      markOnlineOnConnect: true,
+      connectTimeoutMs: 60000,
+      defaultQueryTimeoutMs: 60000,
+      keepAliveIntervalMs: 30000
+    });
 
-  sock.ev.on('creds.update', saveCreds);
+    sock.ev.on('creds.update', saveCreds);
 
-  // Connection updates
-  sock.ev.on('connection.update', async (update) => {
-    const { connection, lastDisconnect, qr } = update;
+    // Connection updates
+    sock.ev.on('connection.update', async (update) => {
+      const { connection, lastDisconnect, qr } = update;
 
-    if (qr) {
-      console.log(chalk.yellow('\n📌 Scan this QR code with WhatsApp:\n'));
-      qrcode.generate(qr, { small: true });
-      console.log(chalk.gray('\nOr use this pairing code: ' + qr));
-    }
-
-    if (connection === 'open') {
-      console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
-      console.log(chalk.magentaBright('⚡ Initializing owner...'));
-      initializeOwner(sock);
-      console.log(chalk.cyanBright(`📊 Bot Mode: ${getModeStatus()}`));
-    } else if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
-      if (shouldReconnect) {
-        console.log(chalk.yellow('⚠️ Connection closed, reconnecting...'));
-        setTimeout(() => startBot(), 3000); // reconnect after 3 seconds
-      } else {
-        console.log(chalk.red('❌ Connection closed. Please delete auth_info and scan QR again.'));
+      if (qr) {
+        console.log(chalk.yellow('\n📌 Scan this QR code with WhatsApp:\n'));
+        qrcode.generate(qr, { small: true });
+        console.log(chalk.gray('\nOr use this pairing code: ' + qr));
       }
-    }
-  });
+
+      if (connection === 'open') {
+        console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
+        reconnectAttempts = 0;
+      } else if (connection === 'close') {
+        const statusCode = lastDisconnect?.error?.output?.statusCode;
+        const reason = lastDisconnect?.error?.output?.payload?.error;
+        
+        console.log(chalk.yellow(`⚠️ Connection closed. Status: ${statusCode}, Reason: ${reason}`));
+        
+        if (statusCode === 401) {
+          console.log(chalk.red('❌ Authentication failed. Please delete auth_info and scan QR again.'));
+          return;
+        }
+        
+        if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+          console.log(chalk.red(`❌ Max reconnection attempts (${MAX_RECONNECT_ATTEMPTS}) reached. Stopping bot.`));
+          return;
+        }
+        
+        reconnectAttempts++;
+        const delay = getReconnectDelay();
+        console.log(chalk.yellow(`⚠️ Reconnecting in ${delay/1000}s... (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`));
+        setTimeout(() => startBot(), delay);
+      }
+    });
 
   // Welcome / Goodbye events
   sock.ev.on('group-participants.update', async (update) => {
@@ -107,6 +129,25 @@ async function startBot() {
       console.log(chalk.red('Error handling group participant update:'), error.message);
     }
   });
+
+  // Store original sendMessage
+  const originalSendMessage = sock.sendMessage.bind(sock);
+  
+  // Override sendMessage with safe timeout-protected version
+  sock.sendMessage = async (jid, content, options = {}) => {
+    try {
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Message send timeout')), 30000)
+      );
+      
+      const sendPromise = originalSendMessage(jid, content, options);
+      
+      return await Promise.race([sendPromise, timeoutPromise]);
+    } catch (error) {
+      console.log(chalk.red('⚠️ Failed to send message:'), error.message);
+      return null;
+    }
+  };
 
   // Handle incoming messages
   sock.ev.on('messages.upsert', async (m) => {
@@ -142,33 +183,6 @@ async function startBot() {
     // Check if message is a command
     if (!text.startsWith('.')) return;
     
-    // Get user JID for access control
-    const userJid = msg.key.participant || msg.key.remoteJid;
-    
-    // === ACCESS CONTROL MIDDLEWARE ===
-    // Allow these commands without restriction
-    const publicCommands = ['.menu', '.alive', '.ping'];
-    const ownerOnlyCommands = ['.private', '.public', '.sudo'];
-    
-    // Messages from the bot owner (fromMe) always have access
-    const isOwnerMessage = msg.key.fromMe || isOwner(userJid);
-    
-    // Check if user has access
-    if (!isOwnerMessage && !publicCommands.includes(text.toLowerCase().split(' ')[0])) {
-      if (!hasAccess(userJid)) {
-        await sock.sendMessage(from, { text: getAccessDeniedMessage() });
-        return;
-      }
-    }
-    
-    // Owner-only commands check
-    if (ownerOnlyCommands.includes(text.toLowerCase().split(' ')[0]) && !isOwnerMessage) {
-      await sock.sendMessage(from, { 
-        text: '⛔ *Access Denied*\n\n🔐 Only my supreme master can use this command.\n\n_Know your place..._ 💪' 
-      });
-      return;
-    }
-
     // === Commands ===
     switch (true) {
       case text.toLowerCase() === '.menu':
@@ -203,18 +217,6 @@ async function startBot() {
       case text.toLowerCase() === '.autotyping':
       case text.toLowerCase() === '.typing':
         await toggleAutoTyping(sock, msg);
-        break;
-
-      case text.toLowerCase() === '.private':
-        await setPrivateMode(sock, msg, true);
-        break;
-
-      case text.toLowerCase() === '.public':
-        await setPrivateMode(sock, msg, false);
-        break;
-
-      case text.toLowerCase().startsWith('.sudo'):
-        await addSudoUser(sock, msg);
         break;
 
       case text.toLowerCase() === '.mute' || text.toLowerCase() === '.unmute':
@@ -266,6 +268,20 @@ async function startBot() {
       console.log(chalk.red('Error handling message:'), error.message);
     }
   });
+  
+  } catch (error) {
+    console.log(chalk.red('❌ Fatal error in startBot:'), error.message);
+    console.log(chalk.gray('Stack:'), error.stack);
+    
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts++;
+      const delay = getReconnectDelay();
+      console.log(chalk.yellow(`⚠️ Restarting bot in ${delay/1000}s... (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`));
+      setTimeout(() => startBot(), delay);
+    } else {
+      console.log(chalk.red(`❌ Max reconnection attempts reached. Bot stopped.`));
+    }
+  }
 }
 
 startBot();

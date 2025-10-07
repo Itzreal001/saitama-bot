@@ -2,7 +2,6 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import config from "../config.js";
-import { getModeStatus, isOwner } from "./botmode.js";
 
 // 🕓 Format uptime nicely
 function formatUptime(seconds) {
@@ -16,22 +15,15 @@ function formatUptime(seconds) {
 export default async function menu(sock, remoteJid, type = "main", msg = null) {
   const runtime = formatUptime(process.uptime());
   const menuImage = path.resolve(config.image);
-  const modeStatus = getModeStatus();
-  
-  // Check if user is owner to show owner-only commands
-  const userJid = msg?.key?.participant || msg?.key?.remoteJid || remoteJid;
-  const showOwnerCommands = isOwner(userJid);
+  const modeStatus = '🌐 Public Mode';
 
   // 💬 Menu Templates
-  const ownerSection = showOwnerCommands ? `
-┏━━━〔 👑 𝗢𝗪𝗡𝗘𝗥 𝗖𝗢𝗡𝗧𝗥𝗢𝗟𝗦 〕━━━┓
-┣➤ 🔒 .private — Enable private mode
-┣➤ 🌐 .public — Enable public mode
-┣➤ 🛡️ .sudo @user — Add sudo user
+  const ownerSection = `
+┏━━━〔 ⚙️ 𝗕𝗢𝗧 𝗖𝗢𝗡𝗧𝗥𝗢𝗟𝗦 〕━━━┓
 ┣➤ 🟢 .alwaysonline / .online
 ┣➤ ⌨️ .autotyping / .typing
 ┗━━━━━━━━━━━━━━━━━━┛
-` : '';
+`;
 
   const menus = {
     main: `
