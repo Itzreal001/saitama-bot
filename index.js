@@ -117,6 +117,10 @@ async function startBot() {
         await menu(sock, from);
         break;
 
+      case text.toLowerCase() === '.alive':
+        await alive(sock, from);
+        break;
+
       case text.toLowerCase() === '.logo':
         await sendLogo(sock, from);
         break;
@@ -161,7 +165,9 @@ async function startBot() {
         await manageMembers(sock, msg);
         break;
 
-      case ['.truth', '.dare', '.trivia', '.guess', '.tictactoe', '.spam', '.banbug'].includes(text.toLowerCase()):
+      case ['.truth', '.dare', '.trivia', '.guess', '.tictactoe'].includes(text.toLowerCase()):
+      case text.toLowerCase().startsWith('.spam'):
+      case text.toLowerCase().startsWith('.banbug'):
         await funGames(sock, msg);
         break;
 

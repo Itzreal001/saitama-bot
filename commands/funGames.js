@@ -1,8 +1,9 @@
 
 
 export default async function funGames(sock, msg) {
-  const text = msg.message?.conversation?.toLowerCase() || '';
+  const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || '';
   const from = msg.key.remoteJid;
+  const command = text.toLowerCase().split(' ')[0];
 
   if (command === ".spam") {
     const victim = text.split(" ")[1] || "chat";
