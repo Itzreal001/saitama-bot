@@ -21,6 +21,12 @@ import funGames from './commands/funGames.js';
 import downloads from './commands/downloads.js';
 import aiSearch from './commands/aiSearch.js';
 import { toggleAlwaysOnline, toggleAutoTyping, handlePresence, maintainOnlineStatus } from './commands/presence.js';
+import broadcast from './commands/broadcast.js';
+import { setAutoReply, handleAutoReply, isAutoReplyEnabled } from './commands/autoreply.js';
+import { setReminder, listReminders, initReminders } from './commands/reminders.js';
+import stats from './commands/stats.js';
+import { checkRateLimit } from './utils/rateLimiter.js';
+import { trackCommand } from './utils/analytics.js';
 
 // === Bot Banner Display ===
 const banner = `
@@ -95,6 +101,13 @@ async function startBot() {
       if (connection === 'open') {
         console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
         reconnectAttempts = 0;
+        
+        try {
+          initReminders(sock);
+          console.log(chalk.cyan('⏰ Reminder system initialized'));
+        } catch (error) {
+          console.log(chalk.yellow('⚠️ Failed to initialize reminders:'), error.message);
+        }
       } else if (connection === 'close') {
         const statusCode = lastDisconnect?.error?.output?.statusCode;
         const reason = lastDisconnect?.error?.output?.payload?.error;
@@ -180,8 +193,39 @@ async function startBot() {
       return;
     }
 
+    // Auto-reply for non-command messages
+    if (!text.startsWith('.') && isAutoReplyEnabled() && !msg.key.fromMe) {
+      await handleAutoReply(sock, msg);
+      return;
+    }
+
     // Check if message is a command
     if (!text.startsWith('.')) return;
+    
+    // Get user ID
+    const userJid = msg.key.participant || msg.key.remoteJid;
+    const command = text.split(' ')[0].toLowerCase();
+    
+    // Rate limiting (skip for owner)
+    if (!msg.key.fromMe) {
+      const rateCheck = checkRateLimit(userJid);
+      if (!rateCheck.allowed) {
+        if (rateCheck.reason === 'cooldown') {
+          await sock.sendMessage(from, { 
+            text: `⏸️ *Slow down!*\n\nPlease wait ${rateCheck.waitTime}s before sending another command.` 
+          });
+        } else if (rateCheck.reason === 'limit') {
+          await sock.sendMessage(from, { 
+            text: `⛔ *Rate Limit Exceeded*\n\nYou've sent too many commands. Wait ${rateCheck.resetTime}s to continue.\n\n_Limit: 10 commands/minute_` 
+          });
+        }
+        return;
+      }
+    }
+    
+    // Track analytics
+    const groupJid = from.includes('@g.us') ? from : null;
+    trackCommand(command, userJid, groupJid);
     
     // === Commands ===
     switch (true) {
