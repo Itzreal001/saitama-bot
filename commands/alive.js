@@ -3,6 +3,7 @@ import path from 'path';
 import os from 'os';
 import config from '../config.js';
 import chalk from 'chalk';
+import { getModeStatus } from './botmode.js';
 
 // 🕓 Format uptime nicely
 function formatUptime(seconds) {
@@ -15,27 +16,33 @@ function formatUptime(seconds) {
 export default async function alive(sock, remoteJid) {
   const runtime = formatUptime(process.uptime());
   const logoPath = path.resolve(config.image);
+  const modeStatus = getModeStatus();
 
   if (!fs.existsSync(logoPath)) {
     console.log(chalk.red('⚠️ Logo not found at ' + logoPath));
   }
 
   const frames = [
-    '⚡ Saitama MD is booting...',
-    '⚡ Saitama MD is online...',
-    '⚡ Saitama MD is fully operational!',
+    '⚡💪 *Powering up...*',
+    '⚡💥 *Systems online...*',
+    '⚡🔥 *FULLY OPERATIONAL!*',
   ];
 
   for (let i = 0; i < frames.length; i++) {
     await sock.sendMessage(remoteJid, {
       image: fs.existsSync(logoPath) ? { url: logoPath } : undefined,
       caption: `╭━━━〔 👊 *ＳＡＩＴＡＭＡ  𝗠𝗗* 👊 〕━━━╮
-┃ ⚙️ Version: ${config.version}
-┃ ⏰ Uptime: ${runtime}
-┃ 👑 Owner: ${config.ownerName}
-┃ 🌍 Platform: ${os.platform().toUpperCase()}
+┃ ⚙️ *Version:* ${config.version}
+┃ ⏰ *Uptime:* ${runtime}
+┃ 👑 *Owner:* ${config.ownerName}
+┃ 🌍 *Platform:* ${os.platform().toUpperCase()}
+┃ 📊 *Mode:* ${modeStatus}
 ╰━━━━━━━━━━━━━━━━━━━━╯
-${frames[i]}`
+
+${frames[i]}
+
+_"I'm just a bot for fun..."_ 💪
+> Type *.menu* to see available commands`
     });
     await new Promise(r => setTimeout(r, 400)); // animation effect
   }

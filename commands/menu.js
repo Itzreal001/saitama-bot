@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import config from "../config.js";
+import { getModeStatus, isOwner } from "./botmode.js";
 
 // 🕓 Format uptime nicely
 function formatUptime(seconds) {
@@ -12,11 +13,26 @@ function formatUptime(seconds) {
 }
 
 // 🧠 Main Menu + Group Menu Combined
-export default async function menu(sock, remoteJid, type = "main") {
+export default async function menu(sock, remoteJid, type = "main", msg = null) {
   const runtime = formatUptime(process.uptime());
   const menuImage = path.resolve(config.image);
+  const modeStatus = getModeStatus();
+  
+  // Check if user is owner to show owner-only commands
+  const userJid = msg?.key?.participant || msg?.key?.remoteJid || remoteJid;
+  const showOwnerCommands = isOwner(userJid);
 
   // 💬 Menu Templates
+  const ownerSection = showOwnerCommands ? `
+┏━━━〔 👑 𝗢𝗪𝗡𝗘𝗥 𝗖𝗢𝗡𝗧𝗥𝗢𝗟𝗦 〕━━━┓
+┣➤ 🔒 .private — Enable private mode
+┣➤ 🌐 .public — Enable public mode
+┣➤ 🛡️ .sudo @user — Add sudo user
+┣➤ 🟢 .alwaysonline / .online
+┣➤ ⌨️ .autotyping / .typing
+┗━━━━━━━━━━━━━━━━━━┛
+` : '';
+
   const menus = {
     main: `
 ╭━━━〔 👊 *ＳＡＩＴＡＭＡ  𝗠𝗗* 👊 〕━━━╮
@@ -24,6 +40,7 @@ export default async function menu(sock, remoteJid, type = "main") {
 ┃ ⏰ *Uptime:* ${runtime}
 ┃ 👑 *Owner:* ${config.ownerName}
 ┃ 🌍 *Platform:* ${os.platform().toUpperCase()}
+┃ 📊 *Mode:* ${modeStatus}
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 ┏━━━〔 🧠 𝗚𝗘𝗡𝗘𝗥𝗔𝗟 𝗠𝗘𝗡𝗨 〕━━━┓
@@ -33,10 +50,7 @@ export default async function menu(sock, remoteJid, type = "main") {
 ┣➤ 🖼️ .logo
 ┗━━━━━━━━━━━━━━━━━━┛
 
-┏━━━〔 ⚙️ 𝗦𝗘𝗧𝗧𝗜𝗡𝗚𝗦 〕━━━┓
-┣➤ 🟢 .alwaysonline / .online
-┣➤ ⌨️ .autotyping / .typing
-┗━━━━━━━━━━━━━━━━━━┛
+${ownerSection}
 
 ┏━━━〔 👥 𝗚𝗥𝗢𝗨𝗣 𝗠𝗘𝗡𝗨 〕━━━┓
 ┣➤ 🧑‍🤝‍🧑 .groupmenu
@@ -78,6 +92,7 @@ export default async function menu(sock, remoteJid, type = "main") {
 ┃ ⏰ *Uptime:* ${runtime}
 ┃ 👑 *Owner:* ${config.ownerName}
 ┃ 🌍 *Platform:* ${os.platform().toUpperCase()}
+┃ 📊 *Mode:* ${modeStatus}
 ╰━━━━━━━━━━━━━━━━━━━━╯
 
 ┏━━━〔 🧑‍🤝‍🧑 𝗚𝗥𝗢𝗨𝗣 𝗠𝗔𝗡𝗔𝗚𝗘𝗠𝗘𝗡𝗧 〕━━━┓

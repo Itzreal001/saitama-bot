@@ -21,7 +21,7 @@ import funGames from './commands/funGames.js';
 import downloads from './commands/downloads.js';
 import aiSearch from './commands/aiSearch.js';
 import { toggleAlwaysOnline, toggleAutoTyping, handlePresence, maintainOnlineStatus } from './commands/presence.js';
-import { generatePairingCode } from './commands/pairing.js';
+import { initializeOwner, hasAccess, isOwner, getAccessDeniedMessage, setPrivateMode, addSudoUser, getModeStatus } from './commands/botmode.js';
 
 // === Bot Banner Display ===
 const banner = `
@@ -71,6 +71,9 @@ async function startBot() {
 
     if (connection === 'open') {
       console.log(chalk.greenBright('✅ Saitama Bot Connected Successfully!'));
+      console.log(chalk.magentaBright('⚡ Initializing owner...'));
+      initializeOwner(sock);
+      console.log(chalk.cyanBright(`📊 Bot Mode: ${getModeStatus()}`));
     } else if (connection === 'close') {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401;
       if (shouldReconnect) {
@@ -121,10 +124,40 @@ async function startBot() {
       return;
     }
 
+    // Check if message is a command
+    if (!text.startsWith('.')) return;
+    
+    // Get user JID for access control
+    const userJid = msg.key.participant || msg.key.remoteJid;
+    
+    // === ACCESS CONTROL MIDDLEWARE ===
+    // Allow these commands without restriction
+    const publicCommands = ['.menu', '.alive', '.ping'];
+    const ownerOnlyCommands = ['.private', '.public', '.sudo'];
+    
+    // Messages from the bot owner (fromMe) always have access
+    const isOwnerMessage = msg.key.fromMe || isOwner(userJid);
+    
+    // Check if user has access
+    if (!isOwnerMessage && !publicCommands.includes(text.toLowerCase().split(' ')[0])) {
+      if (!hasAccess(userJid)) {
+        await sock.sendMessage(from, { text: getAccessDeniedMessage() });
+        return;
+      }
+    }
+    
+    // Owner-only commands check
+    if (ownerOnlyCommands.includes(text.toLowerCase().split(' ')[0]) && !isOwnerMessage) {
+      await sock.sendMessage(from, { 
+        text: '⛔ *Access Denied*\n\n🔐 Only my supreme master can use this command.\n\n_Know your place..._ 💪' 
+      });
+      return;
+    }
+
     // === Commands ===
     switch (true) {
       case text.toLowerCase() === '.menu':
-        await menu(sock, from);
+        await menu(sock, from, 'main', msg);
         break;
 
       case text.toLowerCase() === '.alive':
@@ -136,7 +169,7 @@ async function startBot() {
         break;
 
       case text.toLowerCase() === '.groupmenu':
-        await menu(sock, from, 'group');
+        await menu(sock, from, 'group', msg);
         break;
 
       case text.toLowerCase() === '.ping':
@@ -157,8 +190,16 @@ async function startBot() {
         await toggleAutoTyping(sock, msg);
         break;
 
-      case text.toLowerCase().startsWith('.pair'):
-        await generatePairingCode(sock, msg);
+      case text.toLowerCase() === '.private':
+        await setPrivateMode(sock, msg, true);
+        break;
+
+      case text.toLowerCase() === '.public':
+        await setPrivateMode(sock, msg, false);
+        break;
+
+      case text.toLowerCase().startsWith('.sudo'):
+        await addSudoUser(sock, msg);
         break;
 
       case text.toLowerCase() === '.mute' || text.toLowerCase() === '.unmute':
