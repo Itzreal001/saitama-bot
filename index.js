@@ -83,7 +83,16 @@ async function startBot() {
   // Handle incoming messages
   sock.ev.on('messages.upsert', async (m) => {
     const msg = m.messages[0];
-    if (!msg.message || msg.key.fromMe) return;
+    
+    // Debug: Log all messages including fromMe status
+    console.log(chalk.magenta('📨 Raw message - fromMe:'), msg.key.fromMe, 'remoteJid:', msg.key.remoteJid);
+    
+    if (!msg.message) return;
+    
+    if (msg.key.fromMe) {
+      console.log(chalk.red('⚠️ Message ignored - sent from bot\'s own number (fromMe=true)'));
+      return;
+    }
 
     const from = msg.key.remoteJid;
     
