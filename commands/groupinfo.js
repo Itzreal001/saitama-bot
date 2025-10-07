@@ -1,20 +1,15 @@
-// commands/groupinfo.js
 export default async function groupInfo(sock, msg) {
-  const metadata = await sock.groupMetadata(msg.from);
-  const admins = metadata.participants.filter(p => p.admin).map(p => `@${p.id.split("@")[0]}`);
+  const from = msg.key.remoteJid;
 
-  const info = `
-╭━━━〔 👥 *GROUP INFO* 〕━━━╮
-┃ 📛 *Name:* ${metadata.subject}
-┃ 🆔 *ID:* ${metadata.id}
-┃ 👥 *Members:* ${metadata.participants.length}
-┃ 🧑‍💼 *Admins:* ${admins.join(", ") || "None"}
-┃ 📜 *Description:* ${metadata.desc || "No description"}
-╰━━━━━━━━━━━━━━━━━━━━╯
-`;
+  try {
+    const metadata = await sock.groupMetadata(from);
+    const owner = metadata.owner || 'Unknown';
+    const participants = metadata.participants.map(p => p.id.split('@')[0]).join(', ');
 
-  await sock.sendMessage(msg.from, {
-    text: info,
-    mentions: metadata.participants.map(p => p.id),
-  });
+    await sock.sendMessage(from, {
+      text: `📋 *Group Info*\n\n👥 Name: ${metadata.subject}\n🆔 ID: ${metadata.id}\n👑 Owner: ${owner}\n🧍‍♂️ Participants: ${participants}`,
+    });
+  } catch (err) {
+    await sock.sendMessage(from, { text: `❌ Could not fetch group info: ${err.message}` });
+  }
 }
